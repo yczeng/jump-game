@@ -1,6 +1,7 @@
 extern crate piston_window;
 
 use piston_window::*;
+use piston::*;
 
 struct Vector {
 	x: f64,
@@ -59,7 +60,15 @@ fn main() {
 	    match event {
 	        Event::Input(input) => { process_keys(&game, &input); },
 	        Event::Update(update_args) => { update(&game); }
-	        Event::Render(render_args) => { render(&game, &window, &event); }
+	        Event::Render(render_args) => {
+	        	window.draw_2d(&event, |context, graphics, _device| {
+			        clear([1.0; 4], graphics);
+			        rectangle(game.p1.color, // red
+			                  [game.p1.pos.x, game.p1.pos.y, game.p1.size.x, game.p1.size.y],
+			                  context.transform,
+			                  graphics);
+			    });
+	        }
 	    }
         
     }
@@ -89,12 +98,12 @@ fn update(game: &Game) {
 	game.p2.pos.x -= 5.0;
 }
 
-fn render(game: &Game, window: &PistonWindow, event: &dyn GenericEvent) {
-    window.draw_2d(&event, |context, graphics, _device| {
-        clear([1.0; 4], graphics);
-        rectangle(game.p1.color, // red
-                  [game.p1.pos.x, game.p1.pos.y, game.p1.size.x, game.p1.size.y],
-                  context.transform,
-                  graphics);
-    });
-}
+// fn render(game: &Game, window: &PistonWindow, event: &dyn GenericEvent) {
+//     window.draw_2d(&event, |context, graphics, _device| {
+//         clear([1.0; 4], graphics);
+//         rectangle(game.p1.color, // red
+//                   [game.p1.pos.x, game.p1.pos.y, game.p1.size.x, game.p1.size.y],
+//                   context.transform,
+//                   graphics);
+//     });
+// }
