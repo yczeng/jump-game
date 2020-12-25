@@ -106,13 +106,31 @@ fn process_keys(game: &mut Game, input: &Input) {
 }
 
 fn update(game: &mut Game, update_args: &UpdateArgs) {
-	game.p1.pos.x += 5.0;
-	game.p2.pos.x -= 5.0;
+	let p1 = &game.p1;
+	let p2 = &game.p2;
+
+	// p1.acc.x = GRAVITY + applied.x
+	// p1.vel.x += p1.acc.x;
+	// p1.pos.x += p1.vel.x;
 }
 
 fn render(game: &Game, window: &mut PistonWindow, event: Event, render_args: &RenderArgs){
+	let p1 = &game.p1;
+	let p2 = &game.p2;
+
+	let w = render_args.window_size[0];
+	let h = render_args.window_size[1];
+
 	window.draw_2d(&event, |c, g, _d| {
     clear([1.0; 4], g);	 // clear the screen 
-    rectangle([0.0, 0.0, 0.0, 1.0], [0.0, 0.0, 100.0, 100.0], c.transform, g);	// draw the background
+    rectangle([0.0, 0.0, 0.0, 1.0], [0.0, 0.0, w, h], c.transform, g);	// draw the background
+
+    rectangle(p1.color, 
+    	[p1.pos.x, p1.pos.y, p1.size.x, p1.size.y],
+    	c.transform, g);  // draw player 1
+
+    rectangle(p2.color, 
+    	[p2.pos.x, p2.pos.y, p2.size.x, p2.size.y],
+    	c.transform, g);  // draw player 2
   });
 }
