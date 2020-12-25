@@ -4,15 +4,9 @@ use piston_window::{PistonWindow, WindowSettings};
 use piston_window::{Event, Input, Button, ButtonState, Key, Loop, UpdateArgs, RenderArgs};
 use piston_window::{clear, rectangle};
 
-<<<<<<< HEAD
 const GRAVITY: f64 = 100.0;
 const JUMP_FORCE: f64 = 200.0;
 const DRIFT_FORCE: f64 = 50.0;
-=======
-const GRAVITY: f64 = 9.81;
-const JUMP_FORCE: f64 = 9.81;
-const GROUND_FORCE: f64 = 9.81;
->>>>>>> 87a8187171c8c949a5a3c7bc27dffbd5e38595c7
 
 struct Vector {
 	x: f64,
