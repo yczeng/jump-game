@@ -4,6 +4,8 @@ use piston_window::{PistonWindow, WindowSettings};
 use piston_window::{Event, Input, Button, ButtonState, Key, Loop, UpdateArgs, RenderArgs};
 use piston_window::{clear, rectangle};
 
+const GRAVITY: f64 = 9.81;
+
 struct Vector {
 	x: f64,
 	y: f64
@@ -57,6 +59,9 @@ fn main() {
   	p2: p2
   };
 
+  window.set_ups(120);	// set the updates per 
+  window.set_fps(60);
+
   while let Some(event) = window.next() {
     match event {
       Event::Input(input_args, _timestamp) => { process_keys(&mut game, &input_args); },
@@ -106,12 +111,23 @@ fn process_keys(game: &mut Game, input: &Input) {
 }
 
 fn update(game: &mut Game, update_args: &UpdateArgs) {
-	let p1 = &game.p1;
-	let p2 = &game.p2;
+	let dt = &update_args.dt;
 
-	// p1.acc.x = GRAVITY + applied.x
-	// p1.vel.x += p1.acc.x;
-	// p1.pos.x += p1.vel.x;
+	// determine accelerations based on states
+	// if game.p1.jump ...
+
+
+	// integrate acceleration to get velocities
+	game.p1.vel.x += game.p1.acc.x * dt;
+	game.p1.vel.y += game.p1.acc.y * dt;
+	game.p2.vel.x += game.p2.acc.x * dt;
+	game.p2.vel.y += game.p2.acc.y * dt;
+
+	// integrate velocities to get positions
+	game.p1.pos.x += game.p1.vel.x * dt;
+	game.p1.pos.y += game.p1.vel.y * dt;
+	game.p2.pos.x += game.p2.vel.x * dt;
+	game.p2.pos.y += game.p2.vel.y * dt;
 }
 
 fn render(game: &Game, window: &mut PistonWindow, event: Event, render_args: &RenderArgs){
