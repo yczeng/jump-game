@@ -5,6 +5,8 @@ use piston_window::{Event, Input, Button, ButtonState, Key, Loop, UpdateArgs, Re
 use piston_window::{clear, rectangle};
 
 const GRAVITY: f64 = 9.81;
+const JUMP_FORCE: f64 = 9.81;
+const GROUND_FORCE: f64 = 9.81;
 
 struct Vector {
 	x: f64,
@@ -58,9 +60,6 @@ fn main() {
   	p1: p1,
   	p2: p2
   };
-
-  window.set_ups(120);	// set the updates per 
-  window.set_fps(60);
 
   while let Some(event) = window.next() {
     match event {
@@ -117,14 +116,14 @@ fn update(game: &mut Game, update_args: &UpdateArgs) {
 	// if game.p1.jump ...
 	// determine accelerations based on states
 	// if game.p1.jump ...
-	// game.p1.acc.y = -JUMP_FORCE + GRAVITY;
-	// game.p1.acc.y = 0.0;
-	// if game.p1.keys.left == true {
-	// 	game.p1.acc.x = -GROUND_FORCE;
-	// }
-	// if game.p1.keys.right == true {
-	// 	game.p1.acc.x = GROUND_FORCE;
-	// }
+	game.p1.acc.y = -JUMP_FORCE + GRAVITY;
+	game.p1.acc.y = 0.0;
+	if game.p1.keys.left == true {
+		game.p1.acc.x = -GROUND_FORCE;
+	}
+	if game.p1.keys.right == true {
+		game.p1.acc.x = GROUND_FORCE;
+	}
 
 	// integrate acceleration to get velocities
 	game.p1.vel.x += game.p1.acc.x * dt;
