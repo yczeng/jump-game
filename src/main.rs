@@ -4,7 +4,9 @@ use piston_window::{PistonWindow, WindowSettings};
 use piston_window::{Event, Input, Button, ButtonState, Key, Loop, UpdateArgs, RenderArgs};
 use piston_window::{clear, rectangle};
 
-const GRAVITY: f64 = 9.81;
+const GRAVITY: f64 = 100.0;
+const JUMP_FORCE: f64 = 200.0;
+const DRIFT_FORCE: f64 = 50.0;
 
 struct Vector {
 	x: f64,
@@ -59,9 +61,6 @@ fn main() {
   	p2: p2
   };
 
-  window.set_ups(120);	// set the updates per 
-  window.set_fps(60);
-
   while let Some(event) = window.next() {
     match event {
       Event::Input(input_args, _timestamp) => { process_keys(&mut game, &input_args); },
@@ -114,14 +113,34 @@ fn update(game: &mut Game, update_args: &UpdateArgs) {
 	let dt = &update_args.dt;
 
 	// determine accelerations based on states
-	// if game.p1.jump ...
-
+	game.p1.acc.y = GRAVITY;
+	if game.p1.keys.jump {
+		game.p1.acc.y -= JUMP_FORCE;
+	}
+	if game.p1.keys.left {
+		game.p1.acc.x = -DRIFT_FORCE;
+	}
+	if game.p1.keys.right {
+		game.p1.acc.x = DRIFT_FORCE;
+	}
 
 	// integrate acceleration to get velocities
 	game.p1.vel.x += game.p1.acc.x * dt;
 	game.p1.vel.y += game.p1.acc.y * dt;
 	game.p2.vel.x += game.p2.acc.x * dt;
 	game.p2.vel.y += game.p2.acc.y * dt;
+
+	// do bounds checks (top and left)
+	if game.p1.pos.y <= 0.0 { game.p1.vel.y = 0.1; }
+	if game.p1.pos.x <= 0.0 { game.p1.vel.x = 0.1; }
+	if game.p2.pos.y <= 0.0 {	game.p2.vel.y = 0.1; }
+	if game.p2.pos.x <= 0.0 {	game.p2.vel.x = 0.1; }
+
+	// do bounds checks (bottom and right)
+	if game.p1.pos.y >= 300.0 { game.p1.vel.y = -0.1; }
+	if game.p1.pos.x >= 400.0 { game.p1.vel.x = -0.1; }
+	if game.p2.pos.y >= 300.0 {	game.p2.vel.y = -0.1; }
+	if game.p2.pos.x >= 400.0 {	game.p2.vel.x = -0.1; }
 
 	// integrate velocities to get positions
 	game.p1.pos.x += game.p1.vel.x * dt;
