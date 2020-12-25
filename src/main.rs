@@ -6,13 +6,15 @@ use piston_window::{clear, rectangle};
 
 // FORCES
 const GRAVITY: f64 = 9.81;  // force of gravity always applied downwards
-const JUMP_FORCE: f64 = 20.0;  // force applied while jumping
+const JUMP_FORCE: f64 = 50.0;  // force applied while jumping
 const DRIFT_FORCE: f64 = 5.0;  // force applied by horizontal movement
-const DRAG_FORCE: f64 = 0.5;  // friction force applied opposing velocity
+const GND_DRAG_FORCE: f64 = 0.5;  // friction force applied opposing velocity while grounded
+const AIR_DRAG_FORCE: f64 = 0.1;  // friction force applied opposing velocity in the air
+
 
 // IMPULSES
-const JUMP_DURATION: i32 = 10;  // max duration of jump impulse in frames
-const RUN_DURATION: i32 = 10;  // max duration of run impulse in frames
+const JUMP_DURATION: i32 = 12;  // max duration of jump impulse in frames
+const DRIFT_DURATION: i32 = 40;  // max duration of run impulse in frames
 
 // SPEEDS
 const MIN_XSPEED: f64 = 0.01;  // x-speeds less than this are assumed to not be moving
@@ -46,7 +48,10 @@ struct Player {
 	acc: Vector,
 	size: Vector,
 	color: [f32; 4],
-	keys: KeyState
+	keys: KeyState,
+  jump_time: i32,
+  drift_time: i32,
+  grounded: bool
 }
 
 struct Game {
@@ -65,7 +70,10 @@ fn main() {
   	acc: Vector{x:0.0, y:0.0},
   	size: Vector{x:2.0*BOX_WIDTH, y:2.0*BOX_HEIGHT},
   	color: [1.0, 0.0, 0.0, 1.0],
-  	keys: KeyState{left: false, right: false, jump: false}
+  	keys: KeyState{left: false, right: false, jump: false},
+    jump_time: 0,
+    drift_time: 0,
+    grounded: false
   };
 
   let p2 = Player {
@@ -74,7 +82,10 @@ fn main() {
   	acc: Vector{x:0.0, y:0.0},
   	size: Vector{x:2.0*BOX_WIDTH, y:2.0*BOX_HEIGHT},
   	color: [0.0, 1.0, 0.0, 1.0],
-  	keys: KeyState{left: false, right: false, jump: false}
+  	keys: KeyState{left: false, right: false, jump: false},
+    jump_time: 0,
+    drift_time: 0,
+    grounded: false
   };
   
   let mut game = Game {
@@ -138,38 +149,79 @@ fn update(game: &mut Game, update_args: &UpdateArgs) {
 fn update_player(p: &mut Player, dt: f64) {
 	// determine accelerations based on states
 	p.acc.y = -GRAVITY;
-	if p.keys.jump { p.acc.y += JUMP_FORCE; }
-	if p.keys.left { p.acc.x = -DRIFT_FORCE; }
-	if p.keys.right {	p.acc.x = DRIFT_FORCE; }
-
-  if p.vel.x >= MIN_XSPEED {
-    p.acc.x -= DRAG_FORCE;
-    if p.vel.x + p.acc.x < MIN_XSPEED {
-      p.vel.x = 0.0;
-      p.acc.x = 0.0;
+	if p.keys.jump {
+    if p.jump_time < JUMP_DURATION {
+      p.acc.y = JUMP_FORCE;
+      p.jump_time += 1;
     }
+  } else if p.grounded {
+    p.jump_time = 0;
+  } else {
+    p.jump_time = JUMP_DURATION;
   }
-  if p.vel.x <= -MIN_XSPEED {
-    p.acc.x += DRAG_FORCE;
-    if p.vel.x + p.acc.x > -MIN_XSPEED {
-      p.vel.x = 0.0;
-      p.acc.x = 0.0;
+
+	if p.keys.left { 
+    if p.drift_time < DRIFT_DURATION {
+      p.acc.x = -DRIFT_FORCE;
+      p.drift_time += 1;
     }
+  } else if p.keys.right {
+    if p.drift_time < DRIFT_DURATION {
+      p.acc.x = DRIFT_FORCE;
+      p.drift_time += 1;
+    }
+  } else {
+    if p.vel.x >= MIN_XSPEED {
+      if p.grounded {
+        p.acc.x -= GND_DRAG_FORCE;
+      } else {
+        p.acc.x -= AIR_DRAG_FORCE;
+      }
+      if p.vel.x + p.acc.x < MIN_XSPEED {
+        p.vel.x = 0.0;
+        p.acc.x = 0.0;
+      }
+    }
+    if p.vel.x <= -MIN_XSPEED {
+      if p.grounded {
+        p.acc.x += GND_DRAG_FORCE;
+      } else {
+        p.acc.x += AIR_DRAG_FORCE;
+      }
+      if p.vel.x + p.acc.x > -MIN_XSPEED {
+        p.vel.x = 0.0;
+        p.acc.x = 0.0;
+      }
+    }
+    p.drift_time = 0;
   }
 
 	// integrate acceleration to get velocities
 	p.vel.x += p.acc.x * dt;
 	p.vel.y += p.acc.y * dt;
 
-	// do bounds checks (top and left)
-	if p.pos.y <= BOX_HEIGHT { p.vel.y = MIN_YSPEED; } // floor
-	if p.pos.x <= 0.0 { p.vel.x = MIN_XSPEED; } // left
-	if p.pos.y >= HEIGHT { p.vel.y = -MIN_YSPEED; } // ceiling
-	if p.pos.x >= WIDTH { p.vel.x = -MIN_XSPEED; } // right
-
 	// integrate velocities to get positions
 	p.pos.x += p.vel.x * dt;
 	p.pos.y += p.vel.y * dt;
+
+  // do bounds checks (top and left)
+  if p.pos.y <= BOX_HEIGHT {  // floor
+    p.pos.y = BOX_HEIGHT + MIN_YSPEED*dt;
+    p.vel.y = 0.0;
+  } else if p.pos.y >= HEIGHT {  // ceiling
+    p.pos.y = HEIGHT - MIN_YSPEED*dt;
+    p.vel.y = 0.0;
+  }
+  if p.pos.x <= 0.0 {  // left
+    p.pos.x = 0.0 + MIN_XSPEED*dt;
+    p.vel.x = 0.0;
+  } else if p.pos.x >= WIDTH {  // right
+    p.pos.x = WIDTH - MIN_XSPEED*dt;
+    p.vel.x = 0.0;
+  }
+
+  p.grounded = p.pos.y <= BOX_HEIGHT + MIN_YSPEED*dt;
+  // println!("P[x:{}, y:{}, vx: {}, vy:{}, ax:{}, ay:{}]", p.pos.x, p.pos.y, p.vel.x, p.vel.y, p.acc.x, p.acc.y);
 }
 
 fn render(game: &Game, window: &mut PistonWindow, event: Event, render_args: &RenderArgs){
