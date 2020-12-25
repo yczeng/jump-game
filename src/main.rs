@@ -34,7 +34,7 @@ fn main() {
     WindowSettings::new("Jump Game", [640, 480])
     .exit_on_esc(true).build().unwrap();
 
-  let mut p1 = Player {
+  let p1 = Player {
   	pos: Vector{x:0.0, y:0.0},
   	vel: Vector{x:0.0, y:0.0},
   	acc: Vector{x:0.0, y:0.0},
@@ -43,7 +43,7 @@ fn main() {
   	keys: KeyState{left: false, right: false, jump: false}
   };
 
-  let mut p2 = Player {
+  let p2 = Player {
   	pos: Vector{x:200.0, y:0.0},
   	vel: Vector{x:0.0, y:0.0},
   	acc: Vector{x:0.0, y:0.0},
@@ -60,14 +60,10 @@ fn main() {
   while let Some(event) = window.next() {
     match event {
       Event::Input(input_args, _timestamp) => { process_keys(&mut game, &input_args); },
-      Event::Loop(loop_args) => { 
+      Event::Loop(loop_args) => {
       	match loop_args {
-      		Loop::Update(update_args) => {
-      			update(&mut game, &update_args); 
-      		},
-      		Loop::Render(render_args) => { 
-      			render(&game, &mut window, event, &render_args); 
-      		},
+      		Loop::Update(update_args) => { update(&mut game, &update_args); },
+      		Loop::Render(render_args) => { render(&game, &mut window, event, &render_args); },
       		_ => {}
       	}},
       _ => {}
