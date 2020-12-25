@@ -115,7 +115,16 @@ fn update(game: &mut Game, update_args: &UpdateArgs) {
 
 	// determine accelerations based on states
 	// if game.p1.jump ...
-
+	// determine accelerations based on states
+	// if game.p1.jump ...
+	// game.p1.acc.y = -JUMP_FORCE + GRAVITY;
+	// game.p1.acc.y = 0.0;
+	// if game.p1.keys.left == true {
+	// 	game.p1.acc.x = -GROUND_FORCE;
+	// }
+	// if game.p1.keys.right == true {
+	// 	game.p1.acc.x = GROUND_FORCE;
+	// }
 
 	// integrate acceleration to get velocities
 	game.p1.vel.x += game.p1.acc.x * dt;
