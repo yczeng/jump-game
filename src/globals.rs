@@ -1,5 +1,5 @@
-pub static IP = "127.0.0.1:2793";
-pub static CONNECTION: &'static str = "ws://" + IP;
+pub static IP: &'static str = "127.0.0.1:2793";
+pub static CONNECTION: &'static str = "ws://127.0.0.1:2793";
 
 // FORCES
 pub static GRAVITY: f64 = 9.81;  // force of gravity always applied downwards

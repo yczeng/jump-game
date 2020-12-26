@@ -4,7 +4,8 @@ use std::thread;
 use websocket::sync::Server;
 use websocket::OwnedMessage;
 
-mod main;
+// mod main;
+mod globals;
 
 fn main() {
 	let server = Server::bind(globals::IP).unwrap();
@@ -28,17 +29,17 @@ fn main() {
 
 			let (mut receiver, mut sender) = client.split().unwrap();
 
-			let p1 = main::Player {
-			  	pos: Vector{x:2.0*globals::BOX_WIDTH, y:2.0*globals::BOX_HEIGHT+0.1},
-			  	vel: Vector{x:0.0, y:0.0},
-			  	acc: Vector{x:0.0, y:0.0},
-			  	size: Vector{x:2.0*globals::BOX_WIDTH, y:2.0*globals::BOX_HEIGHT},
-			  	color: [1.0, 0.0, 0.0, 1.0],
-			  	keys: KeyState{left: false, right: false, jump: false},
-			    jump_time: 0,
-			    drift_time: 0,
-			    grounded: false
-			};
+			// let p1 = main::Player {
+			//   	pos: Vector{x:2.0*globals::BOX_WIDTH, y:2.0*globals::BOX_HEIGHT+0.1},
+			//   	vel: Vector{x:0.0, y:0.0},
+			//   	acc: Vector{x:0.0, y:0.0},
+			//   	size: Vector{x:2.0*globals::BOX_WIDTH, y:2.0*globals::BOX_HEIGHT},
+			//   	color: [1.0, 0.0, 0.0, 1.0],
+			//   	keys: KeyState{left: false, right: false, jump: false},
+			//     jump_time: 0,
+			//     drift_time: 0,
+			//     grounded: false
+			// };
 
 			for message in receiver.incoming_messages() {
 				// whenever a message is received, it should contain the new state of the client that sent the action
