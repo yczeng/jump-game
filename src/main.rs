@@ -4,45 +4,29 @@ use piston_window::{PistonWindow, WindowSettings};
 use piston_window::{Event, Input, Button, ButtonState, Key, Loop, UpdateArgs, RenderArgs};
 use piston_window::{clear, rectangle};
 
-// FORCES
-const GRAVITY: f64 = 9.81;  // force of gravity always applied downwards
-const JUMP_FORCE: f64 = 50.0;  // force applied while jumping
-const DRIFT_FORCE: f64 = 5.0;  // force applied by horizontal movement
-const GND_DRAG_FORCE: f64 = 0.5;  // friction force applied opposing velocity while grounded
-const AIR_DRAG_FORCE: f64 = 0.1;  // friction force applied opposing velocity in the air
+extern crate websocket;
 
+use std::io::stdin;
+use std::sync::mpsc::channel;
+use std::thread;
 
-// IMPULSES
-const JUMP_DURATION: i32 = 12;  // max duration of jump impulse in frames
-const DRIFT_DURATION: i32 = 40;  // max duration of run impulse in frames
+use websocket::client::ClientBuilder;
+use websocket::{Message, OwnedMessage};
 
-// SPEEDS
-const MIN_XSPEED: f64 = 0.01;  // x-speeds less than this are assumed to not be moving
-const MAX_XSPEED: f64 = 2.0;  // x-speeds greater than this are clamped
-const MIN_YSPEED: f64 = 0.01;  // y-speeds less than this are assumed to not be moving
-const MAX_YSPEED: f64 = 5.0;  // y-speeds greater than this are clamped
+mod globals;
 
-// COORDINATES
-const WINDOW_WIDTH: f64 = 640.0;  // width of game window in pixels
-const WINDOW_HEIGHT: f64 = 480.0;  // height of game window in pixels
-const WINDOW_SCALE: f64 = 100.0;  // convert pixel coords to meters
-const WIDTH: f64 = WINDOW_WIDTH / WINDOW_SCALE;  // width of game world in meters
-const HEIGHT: f64 = WINDOW_HEIGHT / WINDOW_SCALE;  // height of game world in meters
-const BOX_WIDTH: f64 = 0.2;  // width of the player box in meters
-const BOX_HEIGHT: f64 = 0.3;  // height of the player box in meters
-
-struct Vector {
+pub struct Vector {
 	x: f64,
 	y: f64
 }
 
-struct KeyState {
+pub struct KeyState {
 	left: bool,
 	right: bool,
 	jump: bool
 }
 
-struct Player {
+pub struct Player {
 	pos: Vector,
 	vel: Vector,
 	acc: Vector,
@@ -54,21 +38,21 @@ struct Player {
   grounded: bool
 }
 
-struct Game {
+pub struct Game {
 	p1: Player,
 	p2: Player
 }
 
 fn main() {
   let mut window: PistonWindow =
-    WindowSettings::new("Jump Game", [WINDOW_WIDTH, WINDOW_HEIGHT])
+    WindowSettings::new("Jump Game", [globals::WINDOW_WIDTH, globals::WINDOW_HEIGHT])
     .exit_on_esc(true).build().unwrap();
 
   let p1 = Player {
-  	pos: Vector{x:2.0*BOX_WIDTH, y:2.0*BOX_HEIGHT+0.1},
+  	pos: Vector{x:2.0*globals::BOX_WIDTH, y:2.0*globals::BOX_HEIGHT+0.1},
   	vel: Vector{x:0.0, y:0.0},
   	acc: Vector{x:0.0, y:0.0},
-  	size: Vector{x:2.0*BOX_WIDTH, y:2.0*BOX_HEIGHT},
+  	size: Vector{x:2.0*globals::BOX_WIDTH, y:2.0*globals::BOX_HEIGHT},
   	color: [1.0, 0.0, 0.0, 1.0],
   	keys: KeyState{left: false, right: false, jump: false},
     jump_time: 0,
@@ -77,10 +61,10 @@ fn main() {
   };
 
   let p2 = Player {
-  	pos: Vector{x:WIDTH - 2.0*BOX_WIDTH, y:2.0*BOX_HEIGHT+0.1},
+  	pos: Vector{x:globals::WIDTH - 2.0*globals::BOX_WIDTH, y:2.0*globals::BOX_HEIGHT+0.1},
   	vel: Vector{x:0.0, y:0.0},
   	acc: Vector{x:0.0, y:0.0},
-  	size: Vector{x:2.0*BOX_WIDTH, y:2.0*BOX_HEIGHT},
+  	size: Vector{x:2.0*globals::BOX_WIDTH, y:2.0*globals::BOX_HEIGHT},
   	color: [0.0, 1.0, 0.0, 1.0],
   	keys: KeyState{left: false, right: false, jump: false},
     jump_time: 0,
@@ -93,6 +77,21 @@ fn main() {
   	p2: p2
   };
 
+  // connect to web socket
+  println!("Connecting to {}", globals::CONNECTION);
+
+  let client = ClientBuilder::new(globals::CONNECTION)
+    .unwrap()
+    .add_protocol("rust-websocket")
+    .connect_insecure()
+    .unwrap();
+
+  println!("Successfully connected");
+  // TODO
+  // when connected, add the new player to the game state
+  // broadcast current game state to the new player that joined
+  // anytime update function is called, need to broadcast new states
+
   while let Some(event) = window.next() {
     match event {
       Event::Input(input_args, _timestamp) => { process_keys(&mut game, &input_args); },
@@ -104,7 +103,7 @@ fn main() {
       	}},
       _ => {}
     }
-  }        
+  }
 }
 
 fn process_keys(game: &mut Game, input: &Input) {
@@ -143,52 +142,52 @@ fn process_keys(game: &mut Game, input: &Input) {
 
 fn update(game: &mut Game, update_args: &UpdateArgs) {
   update_player(&mut game.p1, update_args.dt);
-  update_player(&mut game.p2, update_args.dt);
+  // update_player(&mut game.p2, update_args.dt);
 }
 
 fn update_player(p: &mut Player, dt: f64) {
 	// determine accelerations based on states
-	p.acc.y = -GRAVITY;
+	p.acc.y = -globals::GRAVITY;
 	if p.keys.jump {
-    if p.jump_time < JUMP_DURATION {
-      p.acc.y = JUMP_FORCE;
+    if p.jump_time < globals::JUMP_DURATION {
+      p.acc.y = globals::JUMP_FORCE;
       p.jump_time += 1;
     }
   } else if p.grounded {
     p.jump_time = 0;
   } else {
-    p.jump_time = JUMP_DURATION;
+    p.jump_time = globals::JUMP_DURATION;
   }
 
 	if p.keys.left { 
-    if p.drift_time < DRIFT_DURATION {
-      p.acc.x = -DRIFT_FORCE;
+    if p.drift_time < globals::DRIFT_DURATION {
+      p.acc.x = -globals::DRIFT_FORCE;
       p.drift_time += 1;
     }
   } else if p.keys.right {
-    if p.drift_time < DRIFT_DURATION {
-      p.acc.x = DRIFT_FORCE;
+    if p.drift_time < globals::DRIFT_DURATION {
+      p.acc.x = globals::DRIFT_FORCE;
       p.drift_time += 1;
     }
   } else {
-    if p.vel.x >= MIN_XSPEED {
+    if p.vel.x >= globals::MIN_XSPEED {
       if p.grounded {
-        p.acc.x -= GND_DRAG_FORCE;
+        p.acc.x -= globals::GND_DRAG_FORCE;
       } else {
-        p.acc.x -= AIR_DRAG_FORCE;
+        p.acc.x -= globals::AIR_DRAG_FORCE;
       }
-      if p.vel.x + p.acc.x < MIN_XSPEED {
+      if p.vel.x + p.acc.x < globals::MIN_XSPEED {
         p.vel.x = 0.0;
         p.acc.x = 0.0;
       }
     }
-    if p.vel.x <= -MIN_XSPEED {
+    if p.vel.x <= -globals::MIN_XSPEED {
       if p.grounded {
-        p.acc.x += GND_DRAG_FORCE;
+        p.acc.x += globals::GND_DRAG_FORCE;
       } else {
-        p.acc.x += AIR_DRAG_FORCE;
+        p.acc.x += globals::AIR_DRAG_FORCE;
       }
-      if p.vel.x + p.acc.x > -MIN_XSPEED {
+      if p.vel.x + p.acc.x > -globals::MIN_XSPEED {
         p.vel.x = 0.0;
         p.acc.x = 0.0;
       }
@@ -205,22 +204,22 @@ fn update_player(p: &mut Player, dt: f64) {
 	p.pos.y += p.vel.y * dt;
 
   // do bounds checks (top and left)
-  if p.pos.y <= BOX_HEIGHT {  // floor
-    p.pos.y = BOX_HEIGHT + MIN_YSPEED*dt;
+  if p.pos.y <= globals::BOX_HEIGHT {  // floor
+    p.pos.y = globals::BOX_HEIGHT + globals::MIN_YSPEED*dt;
     p.vel.y = 0.0;
-  } else if p.pos.y >= HEIGHT {  // ceiling
-    p.pos.y = HEIGHT - MIN_YSPEED*dt;
+  } else if p.pos.y >= globals::HEIGHT {  // ceiling
+    p.pos.y = globals::HEIGHT - globals::MIN_YSPEED*dt;
     p.vel.y = 0.0;
   }
   if p.pos.x <= 0.0 {  // left
-    p.pos.x = 0.0 + MIN_XSPEED*dt;
+    p.pos.x = 0.0 + globals::MIN_XSPEED*dt;
     p.vel.x = 0.0;
-  } else if p.pos.x >= WIDTH {  // right
-    p.pos.x = WIDTH - MIN_XSPEED*dt;
+  } else if p.pos.x >= globals::WIDTH {  // right
+    p.pos.x = globals::WIDTH - globals::MIN_XSPEED*dt;
     p.vel.x = 0.0;
   }
 
-  p.grounded = p.pos.y <= BOX_HEIGHT + MIN_YSPEED*dt;
+  p.grounded = p.pos.y <= globals::BOX_HEIGHT + globals::MIN_YSPEED*dt;
   // println!("P[x:{}, y:{}, vx: {}, vy:{}, ax:{}, ay:{}]", p.pos.x, p.pos.y, p.vel.x, p.vel.y, p.acc.x, p.acc.y);
 }
 
@@ -237,7 +236,7 @@ fn render(game: &Game, window: &mut PistonWindow, event: Event, render_args: &Re
 }
 
 fn to_window_coords(p: &Player) -> [f64; 4] {
-  return [(p.pos.x - BOX_WIDTH)*WINDOW_SCALE,
-          WINDOW_HEIGHT-(p.pos.y + BOX_HEIGHT)*WINDOW_SCALE,
-          p.size.x*WINDOW_SCALE, p.size.y*WINDOW_SCALE]
+  return [(p.pos.x - globals::BOX_WIDTH)*globals::WINDOW_SCALE,
+          globals::WINDOW_HEIGHT-(p.pos.y + globals::BOX_HEIGHT)*globals::WINDOW_SCALE,
+          p.size.x*globals::WINDOW_SCALE, p.size.y*globals::WINDOW_SCALE]
 }
