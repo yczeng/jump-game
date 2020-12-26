@@ -15,18 +15,18 @@ use websocket::{Message, OwnedMessage};
 
 mod globals;
 
-pub struct Vector {
+struct Vector {
 	x: f64,
 	y: f64
 }
 
-pub struct KeyState {
+struct KeyState {
 	left: bool,
 	right: bool,
 	jump: bool
 }
 
-pub struct Player {
+struct Player {
 	pos: Vector,
 	vel: Vector,
 	acc: Vector,
@@ -38,7 +38,7 @@ pub struct Player {
   grounded: bool
 }
 
-pub struct Game {
+struct Game {
 	p1: Player,
 	p2: Player
 }
@@ -87,10 +87,11 @@ fn main() {
     .unwrap();
 
   println!("Successfully connected");
-  // TODO
-  // when connected, add the new player to the game state
-  // broadcast current game state to the new player that joined
-  // anytime update function is called, need to broadcast new states
+  
+  // TODO:
+  // receive game state from server, populate game struct
+  // create a new player
+  // send the new game state to the server
 
   while let Some(event) = window.next() {
     match event {
@@ -221,6 +222,8 @@ fn update_player(p: &mut Player, dt: f64) {
 
   p.grounded = p.pos.y <= globals::BOX_HEIGHT + globals::MIN_YSPEED*dt;
   // println!("P[x:{}, y:{}, vx: {}, vy:{}, ax:{}, ay:{}]", p.pos.x, p.pos.y, p.vel.x, p.vel.y, p.acc.x, p.acc.y);
+
+  // TODO: for all of these updates, send a message to server saying that the player's info has changed.
 }
 
 fn render(game: &Game, window: &mut PistonWindow, event: Event, render_args: &RenderArgs){

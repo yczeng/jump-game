@@ -7,6 +7,34 @@ use websocket::OwnedMessage;
 // mod main;
 mod globals;
 
+struct Vector {
+	x: f64,
+	y: f64
+}
+
+struct KeyState {
+	left: bool,
+	right: bool,
+	jump: bool
+}
+
+struct Player {
+	pos: Vector,
+	vel: Vector,
+	acc: Vector,
+	size: Vector,
+	color: [f32; 4],
+	keys: KeyState,
+  jump_time: i32,
+  drift_time: i32,
+  grounded: bool
+}
+
+struct Game {
+	p1: Player,
+	p2: Player
+}
+
 fn main() {
 	let server = Server::bind(globals::IP).unwrap();
 
@@ -24,25 +52,14 @@ fn main() {
 
 			println!("Connection from {}", ip);
 
+			// TODO: convert the game struct to a JSON and then send the JSON to the new client
 			let message = OwnedMessage::Text("Hello".to_string());
 			client.send_message(&message).unwrap();
 
 			let (mut receiver, mut sender) = client.split().unwrap();
 
-			// let p1 = main::Player {
-			//   	pos: Vector{x:2.0*globals::BOX_WIDTH, y:2.0*globals::BOX_HEIGHT+0.1},
-			//   	vel: Vector{x:0.0, y:0.0},
-			//   	acc: Vector{x:0.0, y:0.0},
-			//   	size: Vector{x:2.0*globals::BOX_WIDTH, y:2.0*globals::BOX_HEIGHT},
-			//   	color: [1.0, 0.0, 0.0, 1.0],
-			//   	keys: KeyState{left: false, right: false, jump: false},
-			//     jump_time: 0,
-			//     drift_time: 0,
-			//     grounded: false
-			// };
-
 			for message in receiver.incoming_messages() {
-				// whenever a message is received, it should contain the new state of the client that sent the action
+				// TODO: whenever a message is received, it should contain the new state of the client that sent the action
 				// need to update state and broadcast new global state to all connected clients
 
 				let message = message.unwrap();
