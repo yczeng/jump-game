@@ -12,6 +12,10 @@ path = "src/main.rs"
 name = "server"
 path = "src/server.rs"
 
+[[bin]]
+name = "example_client"
+path = "src/example_client.rs"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
