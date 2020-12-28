@@ -30,38 +30,46 @@ struct Player {
   grounded: bool
 }
 
-struct Game {
-	p1: Player,
-	p2: Player
-}
-
 fn main() {
 	let server = Server::bind(globals::IP).unwrap();
+	let mut game = Vec::new();
 
 	for request in server.filter_map(Result::ok) {
 		// Spawn a new thread for each connection.
-		thread::spawn(|| {
-			if !request.protocols().contains(&"rust-websocket".to_string()) {
-				request.reject().unwrap();
-				return;
-			}
 
-			let mut client = request.use_protocol("rust-websocket").accept().unwrap();
+		if !request.protocols().contains(&"rust-websocket".to_string()) {
+			request.reject().unwrap();
+			return;
+		}
 
-			let ip = client.peer_addr().unwrap();
+		let mut client = request.use_protocol("rust-websocket").accept().unwrap();
 
-			println!("Connection from {}", ip);
+		let ip = client.peer_addr().unwrap();
 
-			// TODO: convert the game struct to a JSON and then send the JSON to the new client
+		println!("Connection from {}", ip);
+
+		// create a new player struct and add to game
+		let new_player = Player {
+		  	pos: Vector{x:2.0*globals::BOX_WIDTH, y:2.0*globals::BOX_HEIGHT+0.1},
+		  	vel: Vector{x:0.0, y:0.0},
+		  	acc: Vector{x:0.0, y:0.0},
+		  	size: Vector{x:2.0*globals::BOX_WIDTH, y:2.0*globals::BOX_HEIGHT},
+		  	color: [1.0, 0.0, 0.0, 1.0],
+		  	keys: KeyState{left: false, right: false, jump: false},
+		    jump_time: 0,
+		    drift_time: 0,
+		    grounded: false
+		};
+
+		game.push(new_player);
+
+		thread::spawn(move || {
 			let message = OwnedMessage::Text("Flubbabubba".to_string());
 			client.send_message(&message).unwrap();
 
 			let (mut receiver, mut sender) = client.split().unwrap();
 
 			for message in receiver.incoming_messages() {
-				// TODO: whenever a message is received, it should contain the new state of the client that sent the action
-				// need to update game state and broadcast new global state to all connected clients
-
 				let message = message.unwrap();
 
 				match message {
@@ -75,6 +83,9 @@ fn main() {
 						let message = OwnedMessage::Pong(ping);
 						sender.send_message(&message).unwrap();
 					}
+					OwnedMessage::Text(keystate) => {
+						process_keys(&mut game, &keystate);
+					}
 					_ => {
 						sender.send_message(&message).unwrap();
 					}
@@ -84,39 +95,11 @@ fn main() {
 	}
 }
 
-// fn process_keys(game: &mut Game, input: &Input) {
-// 	match input {
-//     Input::Button(butargs) => {
-//     	match butargs.button {
-//         Button::Keyboard(Key::Space) => { 
-//         	if !game.p1.keys.jump && butargs.state == ButtonState::Press { 
-//         		game.p1.keys.jump = true;
-//         	}
-//         	if game.p1.keys.jump && butargs.state == ButtonState::Release {
-//         		game.p1.keys.jump = false;
-//         	} 
-//         },
-//         Button::Keyboard(Key::Left) => { 
-//         	if !game.p1.keys.left && butargs.state == ButtonState::Press { 
-//         		game.p1.keys.left = true; 
-//         	}
-//         	if game.p1.keys.left && butargs.state == ButtonState::Release {
-//         		game.p1.keys.left = false;
-//         	}
-//        	},
-//         Button::Keyboard(Key::Right) => {
-//         	if !game.p1.keys.right && butargs.state == ButtonState::Press { 
-//         		game.p1.keys.right = true; 
-//         	}
-//         	if game.p1.keys.right && butargs.state == ButtonState::Release {
-//         		game.p1.keys.right = false;
-//         	}
-//         },
-//         _ => {}
-//     }},
-//     _ => {}
-//   }
-// }
+fn process_keys(game: &mut Vec<Player>, keystate: &String) {
+	if keystate == "space-press"{
+		println!("booyah#2");
+	}
+}
 
 // fn update(game: &mut Game, update_args: &UpdateArgs) {
 //   // rewrite for each player in game, update player
